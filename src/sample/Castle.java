@@ -90,7 +90,10 @@ public class Castle extends Sprite {
     }
 
     public void addToProduction(int i){
-        soldiers_production.add(i);
+        if(tresor >= Settings.SOLDIER_COST){
+            soldiers_production.add(i);
+            tresor -= Settings.SOLDIER_COST;
+        }
     }
 
     public void removeFromProduction() {

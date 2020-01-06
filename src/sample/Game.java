@@ -153,17 +153,19 @@ public class Game {
 
     public void castlesTick(Pane layer, Image soldierImage){
 	    for (Castle c : castles){
-	        c.addTresor(10);
+	    	if(c.getPlayer() != null)
+	        	c.addTresor(10);
+	    	else c.addTresor(1);
 	        if(c.nextProduction() != -1){
 				for(int i = 0; i < c.getSoldiersProduction().size() ; i++){
 					if(c.nextProduction() == 0){
 						c.getTroops().add(new Soldier(layer, soldierImage, c.getX(), c.getY(), c));
-						c.getSoldiersProduction().remove(0);
+						c.removeFromProduction();
 						i--;
 					}
 					else {
-						for(Integer p : c.getSoldiersProduction())
-						p--;
+						for(int pos = 0 ; pos < c.getSoldiersProduction().size() ; pos++)
+							c.getSoldiersProduction().set(pos, c.getSoldiersProduction().get(pos) - 1);
 					}
 				}
 	        }
@@ -221,14 +223,9 @@ public class Game {
 
     }
 
-    public void productionTick(){
-
-	}
-
 	public void tick(Pane layer, Image image){
 		castlesTick(layer, image);
         attacksTick();
-        productionTick();
 	}
 
 	public boolean gameOver(){

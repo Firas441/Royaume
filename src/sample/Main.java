@@ -3,8 +3,6 @@ package sample;
 import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Group;
 import javafx.scene.Scene;
@@ -26,6 +24,8 @@ public class Main extends Application {
     private Text message, timer;
     private Pane layer;
     private Player[] players = new Player[2];
+    private Player myturn;
+    private int pos = 0;
     private Image castleImage, castleNeutralImage, soldierImage, landImage;
     private HBox statusBar;
     private AnimationTimer gameloop;
@@ -36,9 +36,9 @@ public class Main extends Application {
     private Text popup_nb_troopsText;
 
     @Override
-    public void start(Stage primaryStage) throws Exception{
+    public void start(Stage primaryStage) {
         root = new Group();
-        scene = new Scene(root, Settings.SCENE_WIDTH, Settings.SCENE_HEIGHT + Settings.STATUS_BAR_HEIGHT, Color.GREEN);
+        scene = new Scene(root, Settings.SCENE_WIDTH, Settings.SCENE_HEIGHT + Settings.STATUS_BAR_HEIGHT);
         scene.getStylesheets().add(getClass().getResource("/css/application.css").toExternalForm());
         primaryStage.setTitle("Empire");
         primaryStage.setScene(scene);
@@ -55,6 +55,7 @@ public class Main extends Application {
 		
         players[0] = new Player("Firas");
         players[1] = new Player("Athman");
+        myturn = players[0];
         Game g = new Game(players, 2, layer, landImage);
         g.generateInitialGameLand(layer, castleImage, castleNeutralImage, soldierImage);
         g.updateSoldiersGame();
@@ -76,6 +77,8 @@ public class Main extends Application {
                     updateStatusBar(i);
                     i++;
                     if (i == Settings.SECONDS_PER_TURN + 1){
+                        pos = (pos + 1) % players.length;
+                        myturn = players[pos];
                         i = 0;
                         g.tick(layer, soldierImage);
                         g.updateSoldiersGame();
@@ -86,6 +89,8 @@ public class Main extends Application {
                             }
                         }
                     }
+                    if(g.gameOver())
+                        System.exit(0);
                 }
              }
         };
@@ -117,15 +122,32 @@ public class Main extends Application {
 
             c.getView().setOnContextMenuRequested(e -> {
                 ContextMenu contextMenu = new ContextMenu();
-                MenuItem attack = new MenuItem("Attack");
-                MenuItem info= new MenuItem("Info");
-                attack.setOnAction(evt -> setPopup(g, selected, c, stage));
+                MenuItem attack, addSoldier;
+
+                if(selected.getPlayer() == myturn && c.getPlayer() != myturn){
+                    attack = new MenuItem("Attack");
+                    attack.setOnAction(evt -> setPopup(g, selected, c, stage));
+                }
+                else attack = new MenuItem();
+
+                if(myturn == c.getPlayer()){
+                    addSoldier = new MenuItem("Add Soldier");
+                    addSoldier.setOnAction(evt -> {
+                        c.addToProduction(Settings.SOLDIER_TIME);
+                        updateStatusBar(c);
+                    });
+                }
+                else addSoldier = new MenuItem();
+
+                MenuItem info = new MenuItem("Info");
                 info.setOnAction(evt -> updateStatusBar(c));
-                contextMenu.getItems().addAll(attack, info);
+
+                contextMenu.getItems().addAll(attack, addSoldier, info);
                 contextMenu.show(c.getView(), e.getScreenX(), e.getScreenY());
             });
         }
     }
+
     public void setPopup(Game g,Castle attacker, Castle target, Stage stage){
         popup = new Popup();
         popup.setWidth(400);
@@ -167,7 +189,7 @@ public class Main extends Application {
 
     public void updateStatusBar(int seconds) {
         statusBar.getChildren().removeAll(message,timer);
-        timer.setText(Settings.SECONDS_PER_TURN - seconds + " seconds left");
+        timer.setText(Settings.SECONDS_PER_TURN - seconds + " seconds left (" + myturn.getName() + "'s turn)");
         statusBar.getChildren().addAll(message, timer);
     }
 
